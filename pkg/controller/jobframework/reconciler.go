@@ -698,12 +698,12 @@ func equivalentToWorkload(ctx context.Context, c client.Client, job GenericJob, 
 		// This might allow some violating jobs to pass equivalency checks, but their
 		// workloads would be invalidated in the next sync after unsuspending.
 		eq := equality.ComparePodSetSlices(jobPodSets, wl.Spec.PodSets)
-		log.V(2).Info(fmt.Sprintf("equivalentToWorkload: case 2: suspended %v equality %v", job.IsSuspended(), eq))
+		log.V(2).Info(fmt.Sprintf("equivalentToWorkload: case 2: suspended %v equality %v: JPS: %v WLPS: %v", job.IsSuspended(), eq, jobPodSets, wl.Spec.PodSets))
 		return job.IsSuspended() && equality.ComparePodSetSlices(jobPodSets, wl.Spec.PodSets)
 	}
 
 	eq := equality.ComparePodSetSlices(jobPodSets, wl.Spec.PodSets)
-	log.V(2).Info(fmt.Sprintf("equivalentToWorkload: case 3: equality %v", eq))
+	log.V(2).Info(fmt.Sprintf("equivalentToWorkload: case 3: equality %v JPS: %v WLPS: %v", eq, jobPodSets, wl.Spec.PodSets))
 	return eq
 }
 
