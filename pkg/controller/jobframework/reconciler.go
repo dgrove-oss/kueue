@@ -677,10 +677,12 @@ func expectedRunningPodSets(ctx context.Context, c client.Client, wl *kueue.Work
 
 // equivalentToWorkload checks if the job corresponds to the workload
 func equivalentToWorkload(ctx context.Context, c client.Client, job GenericJob, wl *kueue.Workload) bool {
+	log := ctrl.LoggerFrom(ctx)
 	owner := metav1.GetControllerOf(wl)
 	// Indexes don't work in unit tests, so we explicitly check for the
 	// owner here.
 	if owner.Name != job.Object().GetName() {
+		log.V(2).Info("equivalentToWorkload: owner name mismatch")
 		return false
 	}
 
@@ -688,16 +690,21 @@ func equivalentToWorkload(ctx context.Context, c client.Client, job GenericJob, 
 
 	if runningPodSets := expectedRunningPodSets(ctx, c, wl); runningPodSets != nil {
 		if equality.ComparePodSetSlices(jobPodSets, runningPodSets) {
+			log.V(2).Info("equivalentToWorkload: matching 1")
 			return true
 		}
 		// If the workload is admitted but the job is suspended, do the check
 		// against the non-running info.
 		// This might allow some violating jobs to pass equivalency checks, but their
 		// workloads would be invalidated in the next sync after unsuspending.
+		eq := equality.ComparePodSetSlices(jobPodSets, wl.Spec.PodSets)
+		log.V(2).Info(fmt.Sprintf("equivalentToWorkload: case 2: suspended %v equality %v", job.IsSuspended(), eq))
 		return job.IsSuspended() && equality.ComparePodSetSlices(jobPodSets, wl.Spec.PodSets)
 	}
 
-	return equality.ComparePodSetSlices(jobPodSets, wl.Spec.PodSets)
+	eq := equality.ComparePodSetSlices(jobPodSets, wl.Spec.PodSets)
+	log.V(2).Info(fmt.Sprintf("equivalentToWorkload: case 3: equality %v", eq))
+	return eq
 }
 
 func (r *JobReconciler) updateWorkloadToMatchJob(ctx context.Context, job GenericJob, object client.Object, wl *kueue.Workload) (*kueue.Workload, error) {
